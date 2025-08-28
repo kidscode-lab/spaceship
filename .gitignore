@@ -215,4 +215,5 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+lesson4-loadimage.py
 spaceship.py
