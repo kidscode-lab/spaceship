@@ -216,4 +216,5 @@ __marimo__/
 .streamlit/secrets.toml
 
 spaceship.py
-lesson4-loadimage.py
+lru_cache-demo.py
+lesson7*.py

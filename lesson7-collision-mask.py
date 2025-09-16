@@ -8,7 +8,7 @@ pygame.init()
 # --- Window ---
 WIDTH, HEIGHT = 900, 650
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Image Collision Demo — Mask Only")
+pygame.display.set_caption("Image Collision Demo — Mask")
 
 # --- Paths ---
 SHIP_PATH = os.path.join("assets", "spaceship.png")

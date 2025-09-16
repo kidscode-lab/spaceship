@@ -53,7 +53,7 @@ ship_image = pygame.transform.scale(ship_image, (ship_width, ship_height))
 ship_rect = ship_image.get_rect(center=(WIDTH // 3, HEIGHT // 3))
 
 # Lesson 5.2 - Load and scale background image
-background_image = pygame.image.load('assets\\purple_background.png').convert()
+background_image = pygame.image.load(os.path.join("assets", "purple_background.png")).convert()
 background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
 
 # Lesson 5.3 - Load rock images from assets sub-directory and store it to a list
@@ -170,25 +170,31 @@ while running:
             running = False
         # 7.8 Fire on Space key
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            now = pygame.time.get_ticks()
-            if now - last_shot_time >= FIRE_COOLDOWN_MS:
-                fire_bullet(ship_rect.center, direction, ship_rect)
-                last_shot_time = now
+            if moving:
+                now = pygame.time.get_ticks()
+                if now - last_shot_time >= FIRE_COOLDOWN_MS:
+                    fire_bullet(ship_rect.center, direction, ship_rect)
+                    last_shot_time = now
 
     # Another event handling method - for continuous movements / holding keys
+    moving = False
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
         ship_rect.x -= ship_speed
         target_direction = 90
+        moving = True
     elif keys[pygame.K_RIGHT]:
         ship_rect.x += ship_speed
         target_direction = 270
+        moving = True
     elif keys[pygame.K_UP]:
         ship_rect.y -= ship_speed
         target_direction = 0
+        moving = True
     elif keys[pygame.K_DOWN]:
         ship_rect.y += ship_speed
         target_direction = 180
+        moving = True
 
     # Lesson 5.1 - update direction
     #   rotate smoothly towards target direction
