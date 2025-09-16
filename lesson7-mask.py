@@ -13,11 +13,17 @@
 #       6.1 Load sound effects for collision
 #       6.2 Collision detection between spaceship and rocks
 #       6.3 Add background music
+#   Lesson 7:
+#       7.1 Build a mask for rock surface
+#       7.2 Cache rotated ship images + masks to keep FPS high
+#       7.3 Rotate ship via cache and keep center
+#       7.4 - Update collision from rectangle to mask
 
 import pygame
 import sys
 import os
 import random
+from functools import lru_cache
 
 pygame.init()
 
@@ -59,7 +65,10 @@ for _ in range(NUM_ROCKS):
         center=(random.randint(0, WIDTH), random.randint(-HEIGHT, 0))
     )
     speed = random.randint(2, 6)  # random falling speed
-    rocks.append({"img": img, "rect": rect, "speed": speed})
+    # Lesson 7.1 - Build a mask for rock surface
+    mask = pygame.mask.from_surface(img)
+    rocks.append({"img": img, "rect": rect, "speed": speed, "mask": mask})    
+    # rocks.append({"img": img, "rect": rect, "speed": speed})
 
 # Lesson 6.1 - Load sound effects
 pygame.mixer.init()
@@ -78,6 +87,19 @@ direction = 0
 #       make rotation smooth
 target_direction = 0
 rotation_speed = 5 
+
+# 7.2 - Cache rotated ship images + masks to keep FPS high
+ANGLE_STEP = 3
+
+def _qa(a):  # quantize angle
+    return int(round(a / ANGLE_STEP) * ANGLE_STEP) % 360
+
+@lru_cache(maxsize=240)
+def get_rotated_ship(angle_q):
+    """Return (rotated_image, mask) for a quantized angle."""
+    img = pygame.transform.rotate(ship_image, angle_q)
+    mask = pygame.mask.from_surface(img)
+    return img, mask
 
 #   Setup game clock - used to control frame rate (FPS)
 clock = pygame.time.Clock()
@@ -135,15 +157,39 @@ while running:
             rock["rect"].center = (random.randint(0, WIDTH), random.randint(-HEIGHT, 0))
             rock["speed"] = random.randint(2, 6)
 
+    # 7.4 - Update collision from rectangle to mask
+    #     - remark section 6.2
     # 6.2 - Collision detection between spaceship and rocks
+    # for rock in rocks:
+    #     if ship_rect.colliderect(rock["rect"]):
+    #         collision_sound.play()
+    #         # reset rock to the top with a new random x position and speed
+    #         # rock["rect"].center = (random.randint(0, WIDTH), random.randint(-HEIGHT, 0))
+    #         # rock["speed"] = random.randint(2, 6)
+    #         pygame.time.delay(500)  # pause for half a second to let the sound play
+    #         running = False  # end the game on collision
+
+    # 7.3 - Rotate ship via cache and keep center
+    angle_q = _qa(direction)
+    old_center = ship_rect.center
+    rotated_ship_img, ship_mask = get_rotated_ship(angle_q)
+    ship_rect = rotated_ship_img.get_rect(center=old_center)
+
+    # 7.4 - Update collision from rectangle to mask
+    hit = False
     for rock in rocks:
-        if ship_rect.colliderect(rock["rect"]):
-            collision_sound.play()
-            # reset rock to the top with a new random x position and speed
-            # rock["rect"].center = (random.randint(0, WIDTH), random.randint(-HEIGHT, 0))
-            # rock["speed"] = random.randint(2, 6)
-            pygame.time.delay(500)  # pause for half a second to let the sound play
-            running = False  # end the game on collision
+        if not ship_rect.colliderect(rock["rect"]):
+            continue
+        # Offset from ship to rock for mask alignment
+        offset = (rock["rect"].left - ship_rect.left, rock["rect"].top - ship_rect.top)
+        if ship_mask.overlap(rock["mask"], offset):
+            hit = True
+            break
+
+    if hit:
+        collision_sound.play()
+        pygame.time.delay(500)
+        running = False
 
     # B) Draw
     #   Clear the screen with color - (20, 20, 30) is a dark blue
@@ -157,10 +203,11 @@ while running:
     #       Remark this line and uncomment the next 4 lines to see the difference
     # window.blit(ship_image, ship_rect)
 
+    # 7.4 - remark below block
     #   Lesson 5.1 - draw the ship rotated to the current direction
-    rotated_ship_img = pygame.transform.rotate(ship_image, direction)
-    ship_rect = rotated_ship_img.get_rect(center=ship_rect.center)
-    rotated_ship_img.get_rect(center=ship_rect.center)
+    # rotated_ship_img = pygame.transform.rotate(ship_image, direction)
+    # ship_rect = rotated_ship_img.get_rect(center=ship_rect.center)
+    # rotated_ship_img.get_rect(center=ship_rect.center)
     window.blit(rotated_ship_img, ship_rect)
 
     #   Losson 5.3 - draw rocks
